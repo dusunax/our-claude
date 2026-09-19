@@ -1,0 +1,5 @@
+node_modules/
+.next/
+out/
+hub/data/registry.json
+.DS_Store
