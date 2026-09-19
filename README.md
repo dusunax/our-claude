@@ -30,4 +30,4 @@ npm run dev      # 개발 서버
 npm run build    # out/ 에 정적 파일 생성
 ```
 
-등록·수정·검증은 MR로 한다. main 직접 push 금지, 관리자 1명 승인.
+등록·수정·검증은 PR로 한다 (GitLab에서는 MR). main 직접 push 금지, 관리자 1명 승인.
