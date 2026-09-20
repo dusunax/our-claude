@@ -5,7 +5,11 @@ owner: du
 version: 0.1.0
 team: Frontend
 status: Draft
-artifacts: []
+artifacts:
+  - title: PR 리스트 예제 (2026-09-14 ~ 2026-09-20)
+    url: https://claude.ai/artifact/72ewrtjdSEzMr43utAgBtz
+    description: 이번 주 머지한 PR을 활동별로 분류한 실행 결과
+    thumbnail: examples/pr-list-example.png
 ---
 
 # pr-list
