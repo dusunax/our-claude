@@ -9,7 +9,7 @@ export type Skill = {
   version: string;
   team: string;
   status: Status;
-  artifacts: { title: string; url: string }[];
+  artifacts: { title: string; url: string; description: string; thumbnail: string }[];
   updatedAt: string;
   body: string;
 };
