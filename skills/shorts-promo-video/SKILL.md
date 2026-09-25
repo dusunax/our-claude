@@ -66,6 +66,13 @@ dev 서버를 띄워 브라우저로 볼 수 있는 로컬 프로젝트라면 �
   별도 관리되는 디렉터리)에 두고 **npm으로 독립적으로 설치**해서 루트 lockfile을 건드리지 않는다.
   workspace가 아닌 독립 프로젝트라면 이 제약은 없다 — 적당한 위치(대상 프로젝트와 나란히, 또는
   별도 작업 디렉터리)에 두면 된다.
+- **산출물 파일명은 `YYMMDD_<프로젝트>_<항목>.<확장자>`로 짓는다.** `out/`에는 여러 프로젝트의
+  결과물이 함께 쌓이므로 파일명만으로 어느 프로젝트의 무엇인지, 언제 만든 것인지 알 수 있어야
+  한다. 날짜는 만든 날(렌더한 날) 기준 6자리(예: 2026-09-25 → `260925`)이고, 프로젝트는 대상
+  앱 이름(kebab-case)이다. 예: `260923_cat-game_promo.mp4`, `260924_cat-game_thumbnail.png`,
+  `260925_cat-game_icon-512.png`. 같은 종류가 여럿이면 `thumbnail-2`, `screenshot-1`처럼 번호를
+  붙인다. 렌더 명령·검증 명령·전달 단계 모두 이 이름을 그대로 쓰고, `out/`에 날짜·프로젝트 없는
+  이름(`thumbnail.png`, `promo.mp4` 등)을 남기지 않는다.
 - 영상 하나로 끝내지 않는다 — 사용자가 실제로 업로드하려면 **썸네일**과 (유튜브라면) **제목·설명·
   홍보 댓글**까지 세트로 필요할 때가 많다. 영상만 만들고 끝내지 말고, 이후 단계도 자연스럽게
   제안한다.
@@ -145,7 +152,7 @@ mcp__playwright__browser_take_screenshot → filename에 tools/promo-studio/publ
 
 ```bash
 cd tools/promo-studio
-npx remotion render src/index.ts <CompositionId> out/<app-name>-promo.mp4
+npx remotion render src/index.ts <CompositionId> out/<YYMMDD>_<app-name>_promo.mp4
 ```
 
 ### 6. 검증 (건너뛰지 않는다)
@@ -153,7 +160,7 @@ npx remotion render src/index.ts <CompositionId> out/<app-name>-promo.mp4
 ```bash
 ffprobe -v error -show_entries format=duration,size \
   -show_entries stream=width,height,r_frame_rate,codec_name \
-  -of default=noprint_wrappers=1 out/<app-name>-promo.mp4
+  -of default=noprint_wrappers=1 out/<YYMMDD>_<app-name>_promo.mp4
 ```
 
 길이·해상도·fps가 의도한 값과 맞는지 확인한다. 그다음 장면별로 샘플 프레임을 뽑아 **Read 도구로
@@ -162,7 +169,7 @@ ffprobe -v error -show_entries format=duration,size \
 
 ```bash
 mkdir -p out/frames
-ffmpeg -y -ss <초> -i out/<app-name>-promo.mp4 -frames:v 1 -vf scale=360:-1 out/frames/t<초>.png -loglevel error
+ffmpeg -y -ss <초> -i out/<YYMMDD>_<app-name>_promo.mp4 -frames:v 1 -vf scale=360:-1 out/frames/t<초>.png -loglevel error
 ```
 
 ### 7. 썸네일
@@ -171,7 +178,7 @@ ffmpeg -y -ss <초> -i out/<app-name>-promo.mp4 -frames:v 1 -vf scale=360:-1 out
 
 ### 8. 전달
 
-`SendUserFile`로 mp4/png를 전달한다. GIF나 스크린샷 미리보기가 아니라 실제 파일을 보낸다.
+`SendUserFile`로 mp4/png를 전달한다(파일명은 위 "원칙"의 `YYMMDD_<프로젝트>_<항목>` 규칙을 따른다). GIF나 스크린샷 미리보기가 아니라 실제 파일을 보낸다.
 피드백을 받으면 값만 바꿔서 재렌더 → 재검증 → 재전달을 반복한다(한 번에 완벽할 필요 없음).
 
 ### 9. (선택) 유튜브 제목·설명·홍보 댓글
@@ -293,7 +300,7 @@ export function randomDecorations(seed: string, count: number, exclude: Zone[]) 
 - **`<Still>`이 아니라 `<Composition>`으로 등록한다.** 아이콘에 스프링 팝인 애니메이션을 쓰면
   `<Still>`은 항상 frame 0만 렌더해서 delay가 있는 아이콘들이 애니메이션 시작 전(투명) 상태로
   찍혀 하나도 안 보이는 문제가 생긴다. 일반 `<Composition durationInFrames={60} .../>`으로 등록하고
-  `npx remotion still src/index.ts <CompositionId> out/thumbnail.png --frame=40`처럼 애니메이션이
+  `npx remotion still src/index.ts <CompositionId> out/<YYMMDD>_<app-name>_thumbnail.png --frame=40`처럼 애니메이션이
   다 끝난 프레임을 지정해서 찍는다.
 - 텍스트를 큰 폰트로 `position:absolute; left:50%; transform:translateX(-50%)`로 중앙 정렬할 때
   **`width`를 반드시 명시하거나 `width:'max-content'`를 준다.** `width:auto`인 채로 두면, 절대
