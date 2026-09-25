@@ -73,6 +73,13 @@ dev 서버를 띄워 브라우저로 볼 수 있는 로컬 프로젝트라면 �
   `260925_cat-game_icon-512.png`. 같은 종류가 여럿이면 `thumbnail-2`, `screenshot-1`처럼 번호를
   붙인다. 렌더 명령·검증 명령·전달 단계 모두 이 이름을 그대로 쓰고, `out/`에 날짜·프로젝트 없는
   이름(`thumbnail.png`, `promo.mp4` 등)을 남기지 않는다.
+- **Remotion 프로젝트는 앱(프로젝트)별 폴더로 나눈다.** `tools/promo-studio` 하나에 여러 앱의 홍보물이
+  쌓이므로, 어느 앱 소속인지 파일 경로만 봐도 드러나야 한다. 앱 전용 코드는 `src/<app-name>/`,
+  앱과 무관한 코드는 `src/shared/`, 에셋은 `public/<app-name>/`, 스토리보드는
+  `storyboard/<app-name>.md`, 컴포지션 id는 `<AppName>` 접두사(예: `CatGamePromo`,
+  `CatGameThumbnail`)를 쓰고 `Root.tsx`에서 `<Folder name="<app-name>">`로 묶는다. 새 앱을 만들 때도
+  기존 앱 폴더를 건드리지 않고 같은 구조를 옆에 하나 더 만든다. 자세한 구조는 "4. Remotion
+  컴포지션 작성" 참고.
 - 영상 하나로 끝내지 않는다 — 사용자가 실제로 업로드하려면 **썸네일**과 (유튜브라면) **제목·설명·
   홍보 댓글**까지 세트로 필요할 때가 많다. 영상만 만들고 끝내지 말고, 이후 단계도 자연스럽게
   제안한다.
@@ -81,11 +88,12 @@ dev 서버를 띄워 브라우저로 볼 수 있는 로컬 프로젝트라면 �
 
 ### 0. 도구 준비
 
-기존에 만들어둔 Remotion 프로젝트가 있으면 재사용한다(`npm install`만 다시 실행). 없으면
+기존에 만들어둔 Remotion 프로젝트가 있으면 재사용한다(`npm install`만 다시 실행하고, 새 앱은 `src/<app-name>/`
+폴더를 옆에 추가한다 — 아래 "4. Remotion 컴포지션 작성" 참고). 없으면
 대상 프로젝트 바깥의 적당한 작업 디렉터리(예: `tools/promo-studio`)에 새로 만든다:
 
 ```bash
-mkdir -p tools/promo-studio/src
+mkdir -p tools/promo-studio/src/shared tools/promo-studio/src/<app-name>
 cd tools/promo-studio
 npm install remotion @remotion/cli @remotion/google-fonts react react-dom
 npm install -D typescript @types/react @types/react-dom
@@ -123,7 +131,7 @@ fps 30 기준으로 구간을 프레임 단위로 환산해둔다. 길이는 고
 mcp__playwright__browser_navigate → 앱 URL
 mcp__playwright__browser_resize → 세로 뷰포트(예: 430x932, 대상 앱의 모바일 브레이크포인트에 맞춰)
 mcp__playwright__browser_evaluate → localStorage 초기화/특정 상태 주입(필요하면), 입력값 채우기 등
-mcp__playwright__browser_take_screenshot → filename에 tools/promo-studio/public/screens/<n>.png 지정
+mcp__playwright__browser_take_screenshot → filename에 tools/promo-studio/public/<app-name>/screens/<n>.png 지정
 ```
 
 특정 상태(예: "결과 화면")를 스크린샷하려면, 실제 API를 호출하는 대신 **해당 화면이 읽는 로컬 상태의
@@ -133,20 +141,43 @@ mcp__playwright__browser_take_screenshot → filename에 tools/promo-studio/publ
 
 ### 4. Remotion 컴포지션 작성
 
-- `src/theme.ts`: 대상 앱의 색상 토큰을 상수로. 실제 앱의 배경 CSS(그라데이션·패턴 등)가 있으면
-  그대로 문자열로 옮겨서 `background` 여백에 재사용한다.
-- `src/safezone.ts`: 아래 "안전 영역" 참고.
-- `src/font.ts`: 아래 "폰트 선택" 참고.
-- `src/decorate.ts`: 시드 고정 랜덤으로 스프라이트 아이콘을 화면 여백에 흩뿌리는 `randomDecorations`
-  헬퍼(아래 "장식 아이콘 겹침 방지" 참고). 영상·썸네일 양쪽에서 재사용한다.
-- `src/components/Scene.tsx`: 스크린샷 한 장 + 스냅줌(장면 시작 시 살짝 확대→1배로 튕기는 스프링) +
-  자막 한 줄을 보여주는 재사용 컴포넌트. 자막은 항상 화면 하단 안전 영역에 고정한다.
-- `src/components/TitleCard.tsx`, `CTACard.tsx`: 오프닝/클로징 카드.
-- `src/<App>Promo.tsx`: `remotion`의 `<Series>`로 장면을 하드컷으로 이어 붙인다 — 아래 "장면 전환"
-  참고.
-- `src/Root.tsx`: `<Composition id="..." component={...} durationInFrames={...} fps={30} width={1080}
-  height={1920} />`.
+앱과 무관한 코드(`src/shared/`)와 앱 전용 코드(`src/<app-name>/`)를 나눠서 만든다:
+
+```
+src/
+  index.ts          registerRoot(RemotionRoot)
+  Root.tsx          앱마다 <Folder name="<app-name>"> + 접두사 붙인 id로 컴포지션 등록
+  shared/           앱과 무관 — safezone.ts, font.ts, decorate.ts
+  <app-name>/       앱 전용 — theme.ts, asset.ts, decorate.ts, <App>Promo.tsx, Thumbnail.tsx,
+                    components/, store/(스토어 에셋을 만들 때)
+public/<app-name>/  스프라이트·배경·스크린샷 (asset.ts의 asset('sprites/x.png')로 참조)
+storyboard/<app-name>.md
+out/                YYMMDD_<app-name>_<항목> 이름의 산출물
+```
+
+- `src/shared/safezone.ts`: 아래 "안전 영역" 참고.
+- `src/shared/font.ts`: 아래 "폰트 선택" 참고.
+- `src/shared/decorate.ts`: 시드 고정 랜덤으로 스프라이트 아이콘을 화면 여백에 흩뿌리는
+  `randomDecorations(icons, seed, count, exclude)`(아래 "장식 아이콘 겹침 방지" 참고). **아이콘 파일명
+  목록은 인자로 받는다** — 어떤 스프라이트를 쓸지는 앱마다 다르므로 shared에 박아 두지 않는다.
+- `src/<app-name>/decorate.ts`: 그 앱의 아이콘 목록을 고정해서 위 함수를 감싼 얇은 래퍼. 앱 안의
+  컴포넌트는 이 래퍼만 부른다.
+- `src/<app-name>/asset.ts`: `export const asset = (p: string) => staticFile(`<app-name>/${p}`)`.
+  컴포넌트에서 `staticFile`을 직접 부르지 않고 `asset()`으로 `public/<app-name>/`을 가리킨다.
+- `src/<app-name>/theme.ts`: 대상 앱의 색상 토큰을 상수로. 실제 앱의 배경 CSS(그라데이션·패턴 등)가
+  있으면 그대로 문자열로 옮겨서 `background` 여백에 재사용한다.
+- `src/<app-name>/components/Scene.tsx`: 스크린샷 한 장 + 스냅줌(장면 시작 시 살짝 확대→1배로 튕기는
+  스프링) + 자막 한 줄을 보여주는 재사용 컴포넌트. 자막은 항상 화면 하단 안전 영역에 고정한다.
+- `src/<app-name>/components/TitleCard.tsx`, `CTACard.tsx`: 오프닝/클로징 카드.
+- `src/<app-name>/<App>Promo.tsx`: `remotion`의 `<Series>`로 장면을 하드컷으로 이어 붙인다 — 아래
+  "장면 전환" 참고.
+- `src/Root.tsx`: `<Folder name="<app-name>">` 안에 `<Composition id="<App>Promo" component={...}
+  durationInFrames={...} fps={30} width={1080} height={1920} />`처럼 등록한다. id는 항상 앱 접두사를
+  붙인다(`<App>Thumbnail`, `<App>StoreIcon` …). 다른 앱의 `<Folder>`는 건드리지 않는다.
 - `src/index.ts`: `registerRoot(RemotionRoot)`.
+
+다른 앱의 코드를 재사용하고 싶어지면 복사하지 말고, 앱과 무관한 부분만 `src/shared/`로 올린 뒤 양쪽에서
+가져다 쓴다. 이때 결과물이 바뀌지 않았는지 이전 렌더와 바이트 단위로 비교(`cmp`)해서 확인한다.
 
 ### 5. 렌더링
 
@@ -207,7 +238,7 @@ UI(캡션 텍스트·아이디·음악 정보·버튼)가 화면 아래쪽을 �
 상수를 만들어 전체 컴포넌트에서 공유한다:
 
 ```ts
-// src/safezone.ts
+// src/shared/safezone.ts
 export const SAFE_TOP = 200
 export const SAFE_BOTTOM = 320 // 화면 맨 아래로부터의 거리
 export const SAFE_BOTTOM_Y = 1920 - SAFE_BOTTOM // 안전 영역의 아래쪽 경계선(y좌표)
@@ -224,7 +255,7 @@ Black Han Sans 같은 극단적으로 눌린/붙은 스타일의 디스플레이
 무게(900)** 처럼 안정적으로 렌더링되는 폰트를 기본값으로 쓴다:
 
 ```ts
-// src/font.ts
+// src/shared/font.ts
 import { loadFont } from '@remotion/google-fonts/NotoSansKR'
 export const { fontFamily: displayFont } = loadFont('normal', { weights: ['900'], subsets: ['korean', 'latin'] })
 ```
@@ -261,14 +292,14 @@ export const { fontFamily: displayFont } = loadFont('normal', { weights: ['900']
 추가해서, 겹치면 최대 N번 다시 뽑는 헬퍼를 만든다:
 
 ```ts
-// src/decorate.ts (핵심 아이디어만 — 실제 구현할 때 이 패턴을 그대로 채워 넣는다)
+// src/shared/decorate.ts (핵심 아이디어만 — 실제 구현할 때 이 패턴을 그대로 채워 넣는다)
 import { random } from 'remotion'
 
 interface Zone { x0: number; y0: number; x1: number; y1: number }
 const overlaps = (x: number, y: number, size: number, zones: Zone[]) =>
   zones.some((z) => x < z.x1 && x + size > z.x0 && y < z.y1 && y + size > z.y0)
 
-export function randomDecorations(seed: string, count: number, exclude: Zone[]) {
+export function randomDecorations(icons: readonly string[], seed: string, count: number, exclude: Zone[]) {
   const placed: Zone[] = []
   const decos = []
   for (let i = 0; i < count; i++) {
@@ -281,7 +312,7 @@ export function randomDecorations(seed: string, count: number, exclude: Zone[]) 
       if (!overlaps(x, y, size, [...exclude, ...placed])) break
     }
     placed.push({ x0: x - 10, y0: y - 10, x1: x + size + 10, y1: y + size + 10 })
-    decos.push({ name: /* 아이콘 목록에서 시드로 고른다 */ '', x, y, size })
+    decos.push({ name: icons[Math.floor(random(`${seed}-${i}-icon`) * icons.length)], x, y, size })
   }
   return decos
 }
