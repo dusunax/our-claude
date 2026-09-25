@@ -1,6 +1,6 @@
 {
   "name": "our-claude",
-  "description": "팀의 Claude Skill 모음. PR 정리와 커밋·PR 생성 Skill을 제공한다.",
+  "description": "팀의 Claude Skill 모음. PR 정리, 커밋·PR 생성, 앱 홍보물(쇼츠/릴스 영상·스토어 리스팅 에셋) 제작 Skill을 제공한다.",
   "version": "0.1.0",
   "author": {
     "name": "dusunax"
